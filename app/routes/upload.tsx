@@ -17,7 +17,9 @@ interface ProcessingStep {
 }
 
 const Upload = () => {
-  const { fs, ai, kv } = usePuterStore();
+  const fs = usePuterStore((state) => state.fs);
+  const ai = usePuterStore((state) => state.ai);
+  const kv = usePuterStore((state) => state.kv);
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -100,20 +102,36 @@ const Upload = () => {
       updateStep("convert", "processing");
       updateStep("extract-text", "processing");
       
-      const [imageFile, textResult] = await Promise.all([
-        convertPdfToImage(resumeFile, 1.5),
-        extractPdfText(resumeFile),
-      ]);
+      let imageFile;
+      let textResult;
+      
+      try {
+        [imageFile, textResult] = await Promise.all([
+          convertPdfToImage(resumeFile, 1.5),
+          extractPdfText(resumeFile),
+        ]);
+      } catch (conversionError) {
+        console.error("PDF processing error:", conversionError);
+        updateStep("convert", "error");
+        updateStep("extract-text", "error");
+        setError("Failed to process resume. Please try a different file.");
+        setIsProcessing(false);
+        return;
+      }
 
-      if (textResult.text) {
+      if (textResult?.text) {
         updateStep("extract-text", "complete", `Extracted ${textResult.text.length} characters`);
       } else {
         updateStep("extract-text", "error", "Could not extract text from PDF");
+        if (textResult?.error) {
+          console.warn("Text extraction warning:", textResult.error);
+        }
       }
       
-      if (!imageFile.file) {
+      if (!imageFile?.file) {
         updateStep("convert", "error");
-        setError("Failed to process resume. Please try a different file.");
+        const errorMsg = imageFile?.error || "Failed to process resume. Please try a different file.";
+        setError(errorMsg);
         setIsProcessing(false);
         return;
       }
@@ -404,7 +422,7 @@ const Upload = () => {
             <button
               type="submit"
               disabled={!file}
-              className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-200"
+              className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-200 cursor-pointer"
             >
               {file ? "Analyze Resume" : "Upload a Resume to Continue"}
             </button>

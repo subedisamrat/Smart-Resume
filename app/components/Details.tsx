@@ -10,7 +10,7 @@ import {
 interface Tip {
   type: "good" | "improve";
   tip: string;
-  explanation: string;
+  explanation?: string;
 }
 
 interface CategoryData {
@@ -71,6 +71,43 @@ const CategoryHeader = memo(({ title, categoryScore }: { title: string; category
 
 CategoryHeader.displayName = "CategoryHeader";
 
+interface TipCardProps {
+  tip: Tip;
+}
+
+const TipCard = memo(({ tip }: TipCardProps) => {
+  const isGood = tip.type === "good";
+  const colors = isGood
+    ? { bg: "bg-green-50", border: "border-green-200", text: "green" }
+    : { bg: "bg-amber-50", border: "border-amber-200", text: "amber" };
+
+  return (
+    <div className={cn("rounded-xl p-4 border", colors.bg, colors.border)}>
+      <div className="flex items-start gap-3">
+        <div className={cn("w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5", isGood ? "bg-green-100" : "bg-amber-100")}>
+          {isGood ? (
+            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          )}
+        </div>
+        <div className="flex-1">
+          <h5 className={cn("font-medium mb-1", `text-${colors.text}-900`)}>{tip.tip}</h5>
+          <p className={cn("text-sm", `text-${colors.text}-700`)}>
+            {tip.explanation || "No detailed explanation available."}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+TipCard.displayName = "TipCard";
+
 interface CategoryContentProps {
   tips: Tip[];
 }
@@ -78,8 +115,14 @@ interface CategoryContentProps {
 const CategoryContent = memo(({ tips }: CategoryContentProps) => {
   if (!tips || tips.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-500">
-        <p>No detailed feedback available for this category.</p>
+      <div className="text-center py-12 bg-slate-50 rounded-xl border border-slate-100">
+        <div className="w-12 h-12 mx-auto mb-3 bg-slate-100 rounded-full flex items-center justify-center">
+          <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <p className="text-slate-500 font-medium">No feedback available</p>
+        <p className="text-slate-400 text-sm mt-1">Analysis did not generate tips for this category.</p>
       </div>
     );
   }
@@ -91,21 +134,15 @@ const CategoryContent = memo(({ tips }: CategoryContentProps) => {
     <div className="space-y-6">
       {goodTips.length > 0 && (
         <div>
-          <h4 className="text-sm font-medium text-green-700 mb-3 flex items-center gap-2">
+          <h4 className="text-sm font-semibold text-green-700 mb-3 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            What's Working Well
+            Strengths ({goodTips.length})
           </h4>
           <div className="space-y-3">
             {goodTips.map((tip, index) => (
-              <div
-                key={`good-${index}`}
-                className="bg-green-50 border border-green-200 rounded-xl p-4"
-              >
-                <h5 className="font-medium text-green-900 mb-1">{tip.tip}</h5>
-                <p className="text-sm text-green-700">{tip.explanation}</p>
-              </div>
+              <TipCard key={`good-${index}`} tip={tip} />
             ))}
           </div>
         </div>
@@ -113,21 +150,15 @@ const CategoryContent = memo(({ tips }: CategoryContentProps) => {
 
       {improveTips.length > 0 && (
         <div>
-          <h4 className="text-sm font-medium text-amber-700 mb-3 flex items-center gap-2">
+          <h4 className="text-sm font-semibold text-amber-700 mb-3 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-            Areas for Improvement
+            Areas to Improve ({improveTips.length})
           </h4>
           <div className="space-y-3">
             {improveTips.map((tip, index) => (
-              <div
-                key={`improve-${index}`}
-                className="bg-amber-50 border border-amber-200 rounded-xl p-4"
-              >
-                <h5 className="font-medium text-amber-900 mb-1">{tip.tip}</h5>
-                <p className="text-sm text-amber-700">{tip.explanation}</p>
-              </div>
+              <TipCard key={`improve-${index}`} tip={tip} />
             ))}
           </div>
         </div>
@@ -143,71 +174,38 @@ interface DetailsProps {
 }
 
 const Details = memo(({ feedback }: DetailsProps) => {
+  const categories = [
+    { id: "tone-style", title: "Tone & Style", data: feedback?.toneAndStyle },
+    { id: "content", title: "Content Quality", data: feedback?.content },
+    { id: "structure", title: "Resume Structure", data: feedback?.structure },
+    { id: "skills", title: "Skills Match", data: feedback?.skills },
+  ];
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
       <div className="p-6 border-b border-slate-100">
         <h2 className="text-xl font-bold text-slate-900">Detailed Feedback</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Comprehensive analysis of your resume by category
+          Click on each category to see specific recommendations
         </p>
       </div>
 
-      <Accordion defaultOpen="tone-style" className="p-2">
-        <AccordionItem id="tone-style">
-          <AccordionHeader itemId="tone-style">
-            <CategoryHeader
-              title="Tone & Style"
-              categoryScore={feedback?.toneAndStyle?.score || 0}
-            />
-          </AccordionHeader>
-          <AccordionContent itemId="tone-style">
-            <div className="pt-2">
-              <CategoryContent tips={feedback?.toneAndStyle?.tips || []} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem id="content">
-          <AccordionHeader itemId="content">
-            <CategoryHeader
-              title="Content"
-              categoryScore={feedback?.content?.score || 0}
-            />
-          </AccordionHeader>
-          <AccordionContent itemId="content">
-            <div className="pt-2">
-              <CategoryContent tips={feedback?.content?.tips || []} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem id="structure">
-          <AccordionHeader itemId="structure">
-            <CategoryHeader
-              title="Structure"
-              categoryScore={feedback?.structure?.score || 0}
-            />
-          </AccordionHeader>
-          <AccordionContent itemId="structure">
-            <div className="pt-2">
-              <CategoryContent tips={feedback?.structure?.tips || []} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem id="skills">
-          <AccordionHeader itemId="skills">
-            <CategoryHeader
-              title="Skills"
-              categoryScore={feedback?.skills?.score || 0}
-            />
-          </AccordionHeader>
-          <AccordionContent itemId="skills">
-            <div className="pt-2">
-              <CategoryContent tips={feedback?.skills?.tips || []} />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+      <Accordion defaultOpen="tone-style" className="divide-y divide-slate-100">
+        {categories.map((category) => (
+          <AccordionItem key={category.id} id={category.id}>
+            <AccordionHeader itemId={category.id}>
+              <CategoryHeader
+                title={category.title}
+                categoryScore={category.data?.score || 0}
+              />
+            </AccordionHeader>
+            <AccordionContent itemId={category.id}>
+              <div className="pt-4">
+                <CategoryContent tips={category.data?.tips || []} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
       </Accordion>
     </div>
   );

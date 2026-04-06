@@ -363,15 +363,45 @@ export const usePuterStore = create<PuterStore>((set, get) => {
       return;
     }
 
-    const prompt = `You are an expert ATS and resume analyst. Analyze this resume and provide feedback.
+    const prompt = `You are an expert ATS and resume analyst. Analyze this resume and provide detailed, helpful feedback.
 
 RESUME:
 ${resumeText}
 
 JOB CONTEXT: ${instructions}
 
-IMPORTANT: Return ONLY a valid JSON object with this exact structure, nothing else:
-{"overallScore":85,"ATS":{"score":80,"tips":[{"type":"good","tip":"Clear contact info"},{"type":"improve","tip":"Add keywords"}]},"toneAndStyle":{"score":85,"tips":[{"type":"good","tip":"Professional tone","explanation":"Your resume uses appropriate professional language"},{"type":"improve","tip":"Be more concise","explanation":"Reduce wordiness in descriptions"}]},"content":{"score":80,"tips":[{"type":"good","tip":"Strong intro","explanation":"Good summary statement"},{"type":"improve","tip":"Quantify achievements","explanation":"Add specific numbers and metrics"}]},"structure":{"score":85,"tips":[{"type":"good","tip":"Logical flow","explanation":"Information is well organized"},{"type":"improve","tip":"Standard sections","explanation":"Consider adding a skills section"}]},"skills":{"score":75,"tips":[{"type":"good","tip":"Relevant skills","explanation":"Skills match job requirements"},{"type":"improve","tip":"Add more tools","explanation":"List more relevant technologies"}]}}`;
+CRITICAL REQUIREMENTS:
+1. You MUST include explanations for EVERY tip - do not leave explanations empty or as null
+2. Each tip MUST have: type ("good" or "improve"), tip (a short title), and explanation (2-3 sentences explaining why this is good or what to improve)
+3. Provide 2-3 tips per category minimum
+4. Scores should be between 0-100
+
+Return ONLY a valid JSON object with this exact structure:
+{
+  "overallScore": number,
+  "ATS": {
+    "score": number,
+    "tips": [{"type": "good" | "improve", "tip": "short title", "explanation": "detailed explanation (2-3 sentences)"}]
+  },
+  "toneAndStyle": {
+    "score": number,
+    "tips": [{"type": "good" | "improve", "tip": "short title", "explanation": "detailed explanation"}]
+  },
+  "content": {
+    "score": number,
+    "tips": [{"type": "good" | "improve", "tip": "short title", "explanation": "detailed explanation"}]
+  },
+  "structure": {
+    "score": number,
+    "tips": [{"type": "good" | "improve", "tip": "short title", "explanation": "detailed explanation"}]
+  },
+  "skills": {
+    "score": number,
+    "tips": [{"type": "good" | "improve", "tip": "short title", "explanation": "detailed explanation"}]
+  }
+}
+
+Only return the JSON object, no other text or markdown formatting.`;
 
     try {
       const response = await puter.ai.chat(prompt, { model: "gpt-4o" });
