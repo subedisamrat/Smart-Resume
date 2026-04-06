@@ -1,8 +1,10 @@
+import { memo } from "react";
+
 interface ScoreBadgeProps {
   score: number;
 }
 
-const ScoreBadge: React.FC<ScoreBadgeProps> = ({ score }) => {
+const ScoreBadge = memo(({ score }: ScoreBadgeProps) => {
   let badgeColor = "";
   let badgeText = "";
 
@@ -22,6 +24,8 @@ const ScoreBadge: React.FC<ScoreBadgeProps> = ({ score }) => {
       <p className="text-sm font-medium">{badgeText}</p>
     </div>
   );
-};
+});
+
+ScoreBadge.displayName = "ScoreBadge";
 
 export default ScoreBadge;

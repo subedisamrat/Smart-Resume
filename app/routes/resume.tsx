@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import ATS from "~/components/ATS";
 import Details from "~/components/Details";
@@ -6,92 +6,291 @@ import Summary from "~/components/Summary";
 import { usePuterStore } from "~/lib/puter";
 
 export const meta = () => [
-  { title: "Smart Resume | Review" },
-  { name: "description", content: "Detailed overview of your resume" },
+  { title: "Resume Analysis | RESUMAI" },
+  { name: "description", content: "Detailed analysis of your resume" },
 ];
 
-const Resume = () => {
-  const { auth, isLoading, fs, kv } = usePuterStore();
-  const { id } = useParams();
+interface ResumeData {
+  id: string;
+  resumePath: string;
+  imagePath: string;
+  companyName?: string;
+  jobTitle?: string;
+  jobDescription?: string;
+  feedback: Feedback | null;
+  createdAt?: string;
+}
 
-  const [imageUrl, setImageUrl] = useState("");
-  const [resumeUrl, setResumeUrl] = useState("");
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
+const SkeletonLine = ({ className = "" }: { className?: string }) => (
+  <div className={`bg-slate-200 rounded animate-pulse ${className}`}></div>
+);
+
+const SkeletonCard = () => (
+  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+    <div className="flex items-center gap-4">
+      <div className="w-20 h-20 bg-slate-200 rounded-xl animate-pulse"></div>
+      <div className="flex-1 space-y-2">
+        <SkeletonLine className="h-5 w-32" />
+        <SkeletonLine className="h-4 w-24" />
+      </div>
+    </div>
+    <SkeletonLine className="h-4 w-full" />
+    <SkeletonLine className="h-4 w-3/4" />
+  </div>
+);
+
+const Resume = () => {
+  const { auth, isLoading: authLoading, fs, kv } = usePuterStore();
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!isLoading && !auth.isAuthenticated)
-      navigate(`/auth?next=/resume/${id}`);
-  }, [isLoading]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [resumeData, setResumeData] = useState<ResumeData | null>(null);
+  const [loadingState, setLoadingState] = useState<"loading" | "loaded" | "error">("loading");
+  const [retryCount, setRetryCount] = useState(0);
 
-  useEffect(() => {
-    const loadResume = async () => {
+  const loadResume = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      setLoadingState("loading");
       const resume = await kv.get(`resume:${id}`);
-      if (!resume) return;
-      const data = JSON.parse(resume);
+      
+      if (!resume) {
+        setLoadingState("error");
+        return;
+      }
 
-      const resumeBlob = await fs.read(data.resumePath);
-      if (!resumeBlob) return;
+      const data: ResumeData = JSON.parse(resume);
+      setResumeData(data);
 
-      const pdfBlob = new Blob([resumeBlob], { type: "application/pdf" });
-      const resumeUrl = URL.createObjectURL(pdfBlob);
-      setResumeUrl(resumeUrl);
+      if (data.feedback && typeof data.feedback === "object" && data.feedback.overallScore !== undefined) {
+        setFeedback(data.feedback);
+      }
 
-      const imageBlob = await fs.read(data.imagePath);
-      if (!imageBlob) return;
+      if (data.resumePath) {
+        const resumeBlob = await fs.read(data.resumePath);
+        if (resumeBlob) {
+          const pdfBlob = new Blob([resumeBlob], { type: "application/pdf" });
+          setResumeUrl(URL.createObjectURL(pdfBlob));
+        }
+      }
 
-      const imageUrl = URL.createObjectURL(imageBlob);
-      setImageUrl(imageUrl);
-      setFeedback(data.feedback);
+      if (data.imagePath) {
+        const imageBlob = await fs.read(data.imagePath);
+        if (imageBlob) {
+          setImageUrl(URL.createObjectURL(imageBlob));
+        }
+      }
 
-      console.log({ resumeUrl, imageUrl });
-      console.log("feedback:", data.feedback);
-    };
+      setLoadingState("loaded");
+    } catch (err) {
+      console.error("Error loading resume:", err);
+      setLoadingState("error");
+    }
+  }, [id, kv, fs]);
+
+  useEffect(() => {
+    if (!authLoading && !auth.isAuthenticated) {
+      navigate(`/auth?next=/resume/${id}`);
+    }
+  }, [authLoading, auth.isAuthenticated, navigate, id]);
+
+  useEffect(() => {
+    if (auth.isAuthenticated && id) {
+      loadResume();
+    }
+  }, [auth.isAuthenticated, id, loadResume]);
+
+  useEffect(() => {
+    if (loadingState === "loaded" && resumeData && !feedback && retryCount < 5) {
+      const timer = setTimeout(async () => {
+        const resume = await kv.get(`resume:${id}`);
+        if (resume) {
+          const data = JSON.parse(resume);
+          if (data.feedback && typeof data.feedback === "object" && data.feedback.overallScore !== undefined) {
+            setFeedback(data.feedback);
+          } else {
+            setRetryCount((prev) => prev + 1);
+          }
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [loadingState, resumeData, feedback, retryCount, id, kv]);
+
+  const handleRefresh = () => {
+    setRetryCount(0);
     loadResume();
-  }, [id]);
+  };
 
   return (
-    <main className="!pt-0">
-      <nav className="resume-nav">
-        <Link to="/" className="back-button">
-          <img src="/icons/back.svg" alt="logo" className="w-2.5 h-2.5" />
-          <span className="text-gray-800 text-sm font-semibold">
-            Back to Home
-          </span>
-        </Link>
-      </nav>
-      <div className="flex flex-row w-full max-lg:flex-col-reverse">
-        <section className="feedback-section bg-[url('/images/bg-small.svg') bg-cover h-[100vh] sticky top-0 items-center justify-center">
-          {imageUrl && resumeUrl && (
-            <div className="animate-in fade-in duration-1000 gradient-border max-sm:m-0 h-[90%] max-2xl:h-fit w-fit">
-              <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
-                <img
-                  src={imageUrl}
-                  className="w-full h-full object-contained rounded-2xl"
-                  title="resume"
-                />
-              </a>
-            </div>
-          )}
-        </section>
-        <section className="feedback-section">
-          <h2 className="text-4xl !text-black font-bold">Resume Review</h2>
-          {feedback ? (
-            <div className="flex flex-col gap-8 animate-in fade-in duration-1000">
-              <Summary feedback={feedback} />
-              <ATS
-                score={feedback?.ATS?.score || 0}
-                suggestions={feedback?.ATS?.tips || []}
-              />
+    <main className="min-h-screen bg-slate-50">
+      <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span className="font-medium">Back</span>
+          </Link>
 
-              <Details feedback={feedback} />
+          {resumeData && (
+            <div className="flex items-center gap-4">
+              {resumeData.companyName && (
+                <span className="text-sm text-slate-500">{resumeData.companyName}</span>
+              )}
+              {resumeData.jobTitle && (
+                <>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-sm text-slate-500">{resumeData.jobTitle}</span>
+                </>
+              )}
             </div>
-          ) : (
-            <img src="/images/resume-scan-2.gif" className="w-full" />
           )}
+
+          <Link
+            to="/upload"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New
+          </Link>
+        </div>
+      </nav>
+
+      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-64px)]">
+        <section className="lg:w-1/2 bg-white border-r border-slate-200 lg:sticky lg:top-16 lg:h-[calc(100vh-64px)] flex flex-col p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-slate-700">Resume Preview</h3>
+            {resumeUrl && (
+              <a
+                href={resumeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download PDF
+              </a>
+            )}
+          </div>
+
+          <div className="flex-1 flex items-center justify-center">
+            {loadingState === "loading" ? (
+              <div className="w-full max-w-md aspect-[3/4] bg-slate-100 rounded-xl animate-pulse"></div>
+            ) : imageUrl ? (
+              <div className="w-full max-w-md bg-slate-50 rounded-xl p-3 shadow-sm border border-slate-100">
+                <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-white">
+                  <img
+                    src={imageUrl}
+                    alt="Resume preview"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p className="text-slate-500">Preview not available</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="lg:w-1/2 p-6 lg:p-10 overflow-y-auto">
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold text-slate-900 mb-1">Resume Analysis</h1>
+              <p className="text-sm text-slate-500">
+                AI-powered feedback to help you improve your resume
+              </p>
+            </div>
+
+            {loadingState === "loading" && !feedback && (
+              <div className="space-y-4">
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+            )}
+
+            {loadingState === "error" && (
+              <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-8">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    Failed to Load
+                  </h3>
+                  <p className="text-slate-500 mb-4">
+                    Could not load resume analysis data.
+                  </p>
+                  <button
+                    onClick={handleRefresh}
+                    className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {feedback && (
+              <div className="space-y-6">
+                <Summary feedback={feedback} />
+                <ATS
+                  score={feedback.ATS?.score || 0}
+                  suggestions={feedback.ATS?.tips || []}
+                />
+                <Details feedback={feedback} />
+              </div>
+            )}
+
+            {loadingState === "loaded" && !feedback && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    Analysis in Progress
+                  </h3>
+                  <p className="text-slate-500 mb-4">
+                    Your resume is being analyzed. This may take a few moments.
+                  </p>
+                  <button
+                    onClick={handleRefresh}
+                    className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </main>
   );
 };
+
 export default Resume;

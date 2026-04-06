@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, memo, useCallback } from "react";
 import { cn } from "~/lib/utils";
 
 interface AccordionContextType {
@@ -37,7 +37,7 @@ export const Accordion: React.FC<AccordionProps> = ({
     defaultOpen ? [defaultOpen] : [],
   );
 
-  const toggleItem = (id: string) => {
+  const toggleItem = useCallback((id: string) => {
     setActiveItems((prev) => {
       if (allowMultiple) {
         return prev.includes(id)
@@ -47,9 +47,12 @@ export const Accordion: React.FC<AccordionProps> = ({
         return prev.includes(id) ? [] : [id];
       }
     });
-  };
+  }, [allowMultiple]);
 
-  const isItemActive = (id: string) => activeItems.includes(id);
+  const isItemActive = useCallback(
+    (id: string) => activeItems.includes(id),
+    [activeItems],
+  );
 
   return (
     <AccordionContext.Provider
@@ -66,8 +69,7 @@ interface AccordionItemProps {
   className?: string;
 }
 
-export const AccordionItem: React.FC<AccordionItemProps> = ({
-  id,
+export const AccordionItem: React.FC<AccordionItemProps> = memo(({
   children,
   className = "",
 }) => {
@@ -76,7 +78,7 @@ export const AccordionItem: React.FC<AccordionItemProps> = ({
       {children}
     </div>
   );
-};
+});
 
 interface AccordionHeaderProps {
   itemId: string;
