@@ -29,12 +29,12 @@ const SkeletonCard = () => (
 );
 
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => (
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md hover:border-indigo-100 transition-all duration-300">
-    <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-200">
+  <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100 hover:shadow-md hover:border-indigo-100 transition-all duration-300">
+    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg shadow-indigo-200">
       {icon}
     </div>
-    <h3 className="text-lg font-semibold text-slate-900 mb-2">{title}</h3>
-    <p className="text-slate-500 text-sm leading-relaxed">{description}</p>
+    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1 sm:mb-2">{title}</h3>
+    <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">{description}</p>
   </div>
 );
 
@@ -138,34 +138,34 @@ export default function Home() {
         </section>
       ) : showLandingPage ? (
         <>
-          <section className="max-w-6xl mx-auto px-4 pt-16 pb-12">
+          <section className="max-w-6xl mx-auto px-4 pt-12 sm:pt-16 pb-8 sm:pb-12">
             <div className="text-center max-w-3xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-sm font-medium mb-6">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-50 text-indigo-600 rounded-full text-xs sm:text-sm font-medium mb-4 sm:mb-6">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 AI-Powered Resume Analysis
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-4 sm:mb-6 leading-tight">
                 Land Your Dream Job with{" "}
                 <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   Smart Feedback
                 </span>
               </h1>
-              <p className="text-lg text-slate-600 mb-10 leading-relaxed">
+              <p className="text-base sm:text-lg text-slate-600 mb-8 sm:mb-10 leading-relaxed px-2">
                 Upload your resume and get instant AI-powered analysis with actionable insights to improve your chances of getting hired.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
                 <Link
                   to="/upload"
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 cursor-pointer w-full sm:w-auto"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
                   Analyze Your Resume
                 </Link>
-                <button className="inline-flex items-center gap-2 px-6 py-4 text-slate-600 font-medium hover:text-indigo-600 transition-colors cursor-pointer">
+                <button className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-4 text-slate-600 font-medium hover:text-indigo-600 transition-colors cursor-pointer w-full sm:w-auto">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -176,55 +176,55 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="max-w-6xl mx-auto px-4 py-16">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
+          <section className="max-w-6xl mx-auto px-4 py-10 sm:py-16">
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-3 sm:mb-4">
                 How It Works
               </h2>
-              <p className="text-slate-500 max-w-xl mx-auto">
+              <p className="text-slate-500 max-w-xl mx-auto text-sm sm:text-base">
                 Get professional resume feedback in three simple steps
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-indigo-100 rounded-2xl flex items-center justify-center">
-                  <span className="text-2xl font-bold text-indigo-600">1</span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+              <div className="text-center p-4 sm:p-0">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-indigo-100 rounded-2xl flex items-center justify-center">
+                  <span className="text-xl sm:text-2xl font-bold text-indigo-600">1</span>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Upload Resume</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2">Upload Resume</h3>
                 <p className="text-slate-500 text-sm">Simply drag and drop your PDF resume or click to upload</p>
               </div>
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-2xl flex items-center justify-center">
-                  <span className="text-2xl font-bold text-purple-600">2</span>
+              <div className="text-center p-4 sm:p-0">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-purple-100 rounded-2xl flex items-center justify-center">
+                  <span className="text-xl sm:text-2xl font-bold text-purple-600">2</span>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Add Job Details</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2">Add Job Details</h3>
                 <p className="text-slate-500 text-sm">Enter the job title and description you're targeting</p>
               </div>
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-2xl flex items-center justify-center">
-                  <span className="text-2xl font-bold text-green-600">3</span>
+              <div className="text-center p-4 sm:p-0">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-green-100 rounded-2xl flex items-center justify-center">
+                  <span className="text-xl sm:text-2xl font-bold text-green-600">3</span>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Get Insights</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2">Get Insights</h3>
                 <p className="text-slate-500 text-sm">Receive detailed feedback and actionable recommendations</p>
               </div>
             </div>
           </section>
 
-          <section className="max-w-6xl mx-auto px-4 py-16">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
+          <section className="max-w-6xl mx-auto px-4 py-10 sm:py-16">
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-3 sm:mb-4">
                 Key Features
               </h2>
-              <p className="text-slate-500 max-w-xl mx-auto">
+              <p className="text-slate-500 max-w-xl mx-auto text-sm sm:text-base">
                 Everything you need to improve your resume
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <FeatureCard
                 icon={
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 }
@@ -233,7 +233,7 @@ export default function Home() {
               />
               <FeatureCard
                 icon={
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 }
@@ -242,7 +242,7 @@ export default function Home() {
               />
               <FeatureCard
                 icon={
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                   </svg>
                 }
@@ -251,7 +251,7 @@ export default function Home() {
               />
               <FeatureCard
                 icon={
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 }
@@ -260,7 +260,7 @@ export default function Home() {
               />
               <FeatureCard
                 icon={
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 }
@@ -269,7 +269,7 @@ export default function Home() {
               />
               <FeatureCard
                 icon={
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 }
@@ -279,17 +279,17 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="max-w-6xl mx-auto px-4 py-16">
-            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl p-8 md:p-12 text-center text-white shadow-2xl shadow-indigo-200">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+          <section className="max-w-6xl mx-auto px-4 py-10 sm:py-16">
+            <div className="bg-indigo-600 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-center text-white shadow-xl shadow-indigo-500/30">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4">
                 Ready to Improve Your Resume?
               </h2>
-              <p className="text-indigo-100 mb-8 max-w-xl mx-auto">
+              <p className="text-indigo-100 mb-6 sm:mb-8 max-w-xl mx-auto text-sm sm:text-base">
                 Join thousands of job seekers who have improved their resumes and landed their dream jobs.
               </p>
               <Link
                 to="/upload"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-indigo-600 font-semibold rounded-xl hover:bg-indigo-50 transition-all shadow-xl cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-indigo-600 font-semibold rounded-xl hover:bg-indigo-50 transition-all shadow-xl cursor-pointer w-full sm:w-auto"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />

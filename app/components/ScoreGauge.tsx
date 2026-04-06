@@ -14,7 +14,7 @@ const ScoreGauge = memo(({ score = 75 }: { score: number }) => {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative w-40 h-20">
+      <div className="relative w-32 h-16 sm:w-40 sm:h-20">
         <svg viewBox="0 0 100 50" className="w-full h-full">
           <defs>
             <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -43,8 +43,8 @@ const ScoreGauge = memo(({ score = 75 }: { score: number }) => {
         </svg>
 
         <div className="absolute inset-0 flex flex-col items-center justify-center pt-2">
-          <div className="text-xl font-bold text-slate-900 pt-4">{score}</div>
-          <div className="text-xs text-slate-400">/100</div>
+          <div className="text-lg sm:text-xl font-bold text-slate-900 pt-3 sm:pt-4">{score}</div>
+          <div className="text-[10px] sm:text-xs text-slate-400">/100</div>
         </div>
       </div>
     </div>

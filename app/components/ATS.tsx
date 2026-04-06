@@ -61,25 +61,25 @@ const ATS = memo(({ score, suggestions }: ATSProps) => {
   const status = getStatusInfo();
 
   return (
-    <div className={`bg-gradient-to-b ${status.gradient} rounded-2xl border ${status.borderColor} overflow-hidden`}>
-      <div className="p-5">
-        <div className="flex items-center gap-4 mb-4">
-          <div className={`w-10 h-10 ${status.iconBg} rounded-xl flex items-center justify-center`}>
+    <div className={`bg-gradient-to-b ${status.gradient} rounded-xl sm:rounded-2xl border ${status.borderColor} overflow-hidden`}>
+      <div className="p-4 sm:p-5">
+        <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 ${status.iconBg} rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0`}>
             {status.icon}
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-bold text-slate-900">{status.title}</h2>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900">{status.title}</h2>
+              <div className="text-right ml-auto">
+                <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeScore}</div>
+                <div className="text-xs text-slate-400">/100</div>
+              </div>
             </div>
-            <p className="text-sm text-slate-500">{status.subtitle}</p>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-slate-900">{safeScore}</div>
-            <div className="text-xs text-slate-400">/100</div>
+            <p className="text-xs sm:text-sm text-slate-500 hidden sm:block">{status.subtitle}</p>
           </div>
         </div>
 
-        <div className={`h-2 ${status.bgColor} rounded-full overflow-hidden`}>
+        <div className={`h-1.5 sm:h-2 ${status.bgColor} rounded-full overflow-hidden`}>
           <div
             className={`h-full ${status.iconBg.replace('bg-', 'bg-')} transition-all duration-500`}
             style={{ width: `${safeScore}%` }}
@@ -88,9 +88,9 @@ const ATS = memo(({ score, suggestions }: ATSProps) => {
       </div>
 
       {safeSuggestions.length > 0 && (
-        <div className="px-5 pb-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-3">Key Points</h3>
-          <div className="space-y-2">
+        <div className="px-4 sm:px-5 pb-4 sm:pb-5">
+          <h3 className="text-xs sm:text-sm font-semibold text-slate-700 mb-2 sm:mb-3">Key Points</h3>
+          <div className="space-y-1.5 sm:space-y-2">
             {safeSuggestions.slice(0, 4).map((suggestion, index) => (
               <div
                 key={index}
@@ -98,16 +98,16 @@ const ATS = memo(({ score, suggestions }: ATSProps) => {
               >
                 <span className={status.textColor}>
                   {suggestion.type === "good" ? (
-                    <svg className="w-4 h-4 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    <svg className="w-4 h-4 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
                     </svg>
                   )}
                 </span>
-                <p className={`text-sm ${status.textColor}`}>{suggestion.tip}</p>
+                <p className={`text-xs sm:text-sm ${status.textColor}`}>{suggestion.tip}</p>
               </div>
             ))}
           </div>

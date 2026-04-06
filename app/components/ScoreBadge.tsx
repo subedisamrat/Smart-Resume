@@ -20,8 +20,8 @@ const ScoreBadge = memo(({ score }: ScoreBadgeProps) => {
   }
 
   return (
-    <div className={`px-3 py-1 rounded-full ${badgeColor}`}>
-      <p className="text-sm font-medium">{badgeText}</p>
+    <div className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full ${badgeColor}`}>
+      <p className="text-xs sm:text-sm font-medium">{badgeText}</p>
     </div>
   );
 });

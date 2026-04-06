@@ -32,30 +32,41 @@ const Navbar = () => {
             </Link>
 
             <div className="flex items-center gap-4">
-              <Link
-                to="/upload"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                New Analysis
-              </Link>
-
-              {isAuthenticated && user && (
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center cursor-pointer">
-                    <span className="text-sm font-semibold text-indigo-600">
-                      {user.username?.charAt(0)?.toUpperCase() || "U"}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setShowSignOutModal(true)}
-                    className="text-sm text-slate-500 hover:text-red-600 transition-colors cursor-pointer"
+              {isAuthenticated && user ? (
+                <>
+                  <Link
+                    to="/upload"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
                   >
-                    Sign Out
-                  </button>
-                </div>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    New Analysis
+                  </Link>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center cursor-pointer">
+                      <span className="text-sm font-semibold text-indigo-600">
+                        {user.username?.charAt(0)?.toUpperCase() || "U"}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setShowSignOutModal(true)}
+                      className="text-sm text-slate-500 hover:text-red-600 transition-colors cursor-pointer"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <Link
+                  to="/auth"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                  Sign In
+                </Link>
               )}
             </div>
           </div>

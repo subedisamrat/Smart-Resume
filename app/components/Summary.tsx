@@ -11,11 +11,11 @@ const Category = memo(({ title, score }: CategoryProps) => {
   const textColor = score > 70 ? "text-green-600" : score > 49 ? "text-yellow-600" : "text-red-600";
 
   return (
-    <div className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-      <span className="text-sm font-medium text-slate-700">{title}</span>
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between py-2 sm:py-3 border-b border-slate-100 last:border-0">
+      <span className="text-xs sm:text-sm font-medium text-slate-700">{title}</span>
+      <div className="flex items-center gap-2 sm:gap-3">
         <ScoreBadge score={score} />
-        <span className={`text-sm font-semibold ${textColor}`}>{score}</span>
+        <span className={`text-xs sm:text-sm font-semibold ${textColor}`}>{score}</span>
       </div>
     </div>
   );
@@ -37,17 +37,17 @@ const Summary = memo(({ feedback }: SummaryProps) => {
   const status = getOverallStatus(feedback.overallScore);
 
   return (
-    <div className={`rounded-2xl bg-white border ${status.border} overflow-hidden`}>
-      <div className="p-5 border-b border-slate-100">
-        <div className="flex items-center gap-6">
+    <div className={`rounded-xl sm:rounded-2xl bg-white border ${status.border} overflow-hidden`}>
+      <div className="p-4 sm:p-5 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           <ScoreGauge score={feedback.overallScore} />
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Overall Score</h2>
-            <p className="text-sm text-slate-500 mt-1">
+          <div className="text-center sm:text-left">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900">Overall Score</h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
               Based on tone, content, structure, and skills
             </p>
             <div className={`inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full ${status.bg}`}>
-              <span className={`text-sm font-medium ${status.color}`}>
+              <span className={`text-xs sm:text-sm font-medium ${status.color}`}>
                 {status.label}
               </span>
             </div>
@@ -55,7 +55,7 @@ const Summary = memo(({ feedback }: SummaryProps) => {
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <Category title="Tone & Style" score={feedback.toneAndStyle?.score || 0} />
         <Category title="Content" score={feedback.content?.score || 0} />
         <Category title="Structure" score={feedback.structure?.score || 0} />
