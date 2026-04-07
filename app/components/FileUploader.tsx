@@ -6,11 +6,26 @@ interface FileUploaderProps {
   onFileSelect?: (file: File | null) => void;
 }
 
+const isValidPdf = async (file: File): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as ArrayBuffer;
+      const bytes = new Uint8Array(result.slice(0, 5));
+      const header = String.fromCharCode(...bytes);
+      const isPdf = header.startsWith("%PDF-");
+      resolve(isPdf);
+    };
+    reader.onerror = () => resolve(false);
+    reader.readAsArrayBuffer(file.slice(0, 5));
+  });
+};
+
 const FileUploader = memo(({ onFileSelect }: FileUploaderProps) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const onDrop = useCallback(
-    (acceptedFiles: File[], rejectedFiles: any[]) => {
+    async (acceptedFiles: File[], rejectedFiles: any[]) => {
       setErrorMessage(null);
 
       if (rejectedFiles.length > 0) {
@@ -30,10 +45,19 @@ const FileUploader = memo(({ onFileSelect }: FileUploaderProps) => {
         } else {
           setErrorMessage("Invalid file type. Only PDF files are accepted.");
         }
+        onFileSelect?.(null);
         return;
       }
 
       const file = acceptedFiles[0] || null;
+      if (file) {
+        const valid = await isValidPdf(file);
+        if (!valid) {
+          setErrorMessage("The file doesn't appear to be a valid PDF. Please choose a different file.");
+          onFileSelect?.(null);
+          return;
+        }
+      }
       onFileSelect?.(file);
     },
     [onFileSelect],

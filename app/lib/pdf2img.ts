@@ -11,31 +11,23 @@ export interface PdfTextResult {
 
 let pdfjsLib: any = null;
 let loadPromise: Promise<any> | null = null;
-let workerInitFailed = false;
 
 async function loadPdfJs(): Promise<any> {
-  if (workerInitFailed) {
-    throw new Error("PDF worker initialization failed");
-  }
-  
   if (pdfjsLib) return pdfjsLib;
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
     try {
       const lib = await import("pdfjs-dist/build/pdf.mjs");
-      
       try {
         lib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
       } catch (workerError) {
-        console.warn("Worker initialization warning:", workerError);
+        console.warn("Worker setup warning:", workerError);
       }
-      
       pdfjsLib = lib;
       return lib;
     } catch (error) {
-      console.error("Failed to load PDF.js library:", error);
-      workerInitFailed = true;
+      console.error("Failed to load PDF.js:", error);
       throw error;
     }
   })();
@@ -43,23 +35,18 @@ async function loadPdfJs(): Promise<any> {
   return loadPromise;
 }
 
-async function extractTextFallback(file: File): Promise<PdfTextResult> {
-  return new Promise((resolve) => {
+async function readFileArrayBuffer(file: File): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const text = content
-          .replace(/[^\x20-\x7E\n]/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-        resolve({ text: text.length > 50 ? text : "" });
-      } catch {
-        resolve({ text: "" });
+      if (e.target?.result) {
+        resolve(e.target.result as ArrayBuffer);
+      } else {
+        reject(new Error("Failed to read file"));
       }
     };
-    reader.onerror = () => resolve({ text: "" });
-    reader.readAsText(file);
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsArrayBuffer(file);
   });
 }
 
@@ -70,8 +57,18 @@ export async function convertPdfToImage(
   try {
     const lib = await loadPdfJs();
 
-    const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = lib.getDocument({ data: arrayBuffer });
+    let arrayBuffer: ArrayBuffer;
+    try {
+      arrayBuffer = await readFileArrayBuffer(file);
+    } catch (readError) {
+      return {
+        imageUrl: "",
+        file: null,
+        error: "Failed to read the file. Please try selecting it again.",
+      };
+    }
+
+    const loadingTask = lib.getDocument({ data: new Uint8Array(arrayBuffer) });
     const pdf = await loadingTask.promise;
     const page = await pdf.getPage(1);
 
@@ -111,7 +108,7 @@ export async function convertPdfToImage(
             resolve({
               imageUrl: "",
               file: null,
-              error: "Failed to create image blob",
+              error: "Failed to create preview image from PDF.",
             });
           }
         },
@@ -121,10 +118,25 @@ export async function convertPdfToImage(
     });
   } catch (err) {
     console.error("PDF conversion error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("Invalid PDF")) {
+      return {
+        imageUrl: "",
+        file: null,
+        error: "The file appears to be corrupted or is not a valid PDF.",
+      };
+    }
+    if (message.includes("password")) {
+      return {
+        imageUrl: "",
+        file: null,
+        error: "This PDF is password-protected. Please use an unprotected PDF.",
+      };
+    }
     return {
       imageUrl: "",
       file: null,
-      error: `Unable to process PDF. Please ensure it's a valid PDF document.`,
+      error: "Unable to process this PDF. Please try a different file.",
     };
   }
 }
@@ -133,8 +145,17 @@ export async function extractPdfText(file: File): Promise<PdfTextResult> {
   try {
     const lib = await loadPdfJs();
 
-    const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = lib.getDocument({ data: arrayBuffer });
+    let arrayBuffer: ArrayBuffer;
+    try {
+      arrayBuffer = await readFileArrayBuffer(file);
+    } catch (readError) {
+      return {
+        text: "",
+        error: "Failed to read the file for text extraction.",
+      };
+    }
+
+    const loadingTask = lib.getDocument({ data: new Uint8Array(arrayBuffer) });
     const pdf = await loadingTask.promise;
 
     let fullText = "";
@@ -150,13 +171,12 @@ export async function extractPdfText(file: File): Promise<PdfTextResult> {
       fullText += pageText + "\n\n";
     }
 
-    if (!fullText.trim()) {
-      return extractTextFallback(file);
-    }
-
     return { text: fullText.trim() };
   } catch (err) {
     console.error("PDF text extraction error:", err);
-    return extractTextFallback(file);
+    return {
+      text: "",
+      error: "Failed to extract text from this PDF.",
+    };
   }
 }
