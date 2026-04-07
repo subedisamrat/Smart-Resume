@@ -16,6 +16,12 @@ interface ProcessingStep {
   status: StepStatus;
 }
 
+interface FormData {
+  companyName: string;
+  jobTitle: string;
+  jobDescription: string;
+}
+
 const Upload = () => {
   const fs = usePuterStore((state) => state.fs);
   const ai = usePuterStore((state) => state.ai);
@@ -24,6 +30,13 @@ const Upload = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<FormData>({
+    companyName: "",
+    jobTitle: "",
+    jobDescription: "",
+  });
+  const [resumeText, setResumeText] = useState<string>("");
+  const [showRetryButton, setShowRetryButton] = useState(false);
 
   const [steps, setSteps] = useState<ProcessingStep[]>([
     { id: "upload", label: "Uploading resume", status: "pending" },
@@ -63,12 +76,56 @@ const Upload = () => {
   const handleFileSelect = (selectedFile: File | null) => {
     setFile(selectedFile);
     setError(null);
+    setShowRetryButton(false);
+  };
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+    setShowRetryButton(false);
   };
 
   const rotateAnalysisPhase = () => {
     analysisPhaseRef.current = (analysisPhaseRef.current + 1) % analysisPhases.length;
     return analysisPhases[analysisPhaseRef.current];
   };
+
+  const generateFallbackFeedback = (reason: string) => ({
+    overallScore: 0,
+    error: reason,
+    rawResponse: "",
+    ATS: { 
+      score: 0, 
+      tips: [
+        { type: "improve" as const, tip: "Unable to analyze", explanation: "We couldn't process your resume. Please ensure you're uploading a valid PDF document with readable text." }
+      ] 
+    },
+    toneAndStyle: { 
+      score: 0, 
+      tips: [
+        { type: "improve" as const, tip: "Analysis unavailable", explanation: "The AI couldn't analyze your document. Please check that your PDF is a valid resume." }
+      ] 
+    },
+    content: { 
+      score: 0, 
+      tips: [
+        { type: "improve" as const, tip: "Content not detected", explanation: "We couldn't extract text from your file. Make sure your resume is a text-based PDF, not a scanned image." }
+      ] 
+    },
+    structure: { 
+      score: 0, 
+      tips: [
+        { type: "improve" as const, tip: "Structure analysis failed", explanation: "The document structure couldn't be analyzed. Try uploading a different file." }
+      ] 
+    },
+    skills: { 
+      score: 0, 
+      tips: [
+        { type: "improve" as const, tip: "Skills not found", explanation: "No skills could be detected. Please verify your resume is properly formatted." }
+      ] 
+    },
+  });
 
   const handleAnalyse = async ({
     companyName,
@@ -83,19 +140,22 @@ const Upload = () => {
   }) => {
     setIsProcessing(true);
     setError(null);
+    setShowRetryButton(false);
+    setResumeText("");
     resetSteps();
 
     let uuid = "";
+    let extractedText = "";
 
-    const handleError = (err: unknown, defaultMessage: string) => {
-      console.error("Analysis error:", err);
+    const getErrorMessage = (err: unknown): string => {
       const message = err instanceof Error ? err.message : String(err);
       if (message.includes("withResolvers")) {
-        setError("Unable to process this PDF file. Please try a different file or ensure it's a valid PDF document.");
-      } else {
-        setError(defaultMessage);
+        return "Unable to process this file. Please try a different PDF document.";
       }
-      setIsProcessing(false);
+      if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
+        return "Network error. Please check your connection and try again.";
+      }
+      return message || "Something went wrong. Please try again.";
     };
 
     try {
@@ -107,13 +167,16 @@ const Upload = () => {
       } catch (uploadError) {
         console.error("Upload error:", uploadError);
         updateStep("upload", "error");
-        handleError(uploadError, "Failed to upload resume. Please try again.");
+        setError(getErrorMessage(uploadError));
+        setShowRetryButton(true);
+        setIsProcessing(false);
         return;
       }
       
       if (!uploadedFile) {
         updateStep("upload", "error");
-        setError("Failed to upload resume. Please try again.");
+        setError("Failed to upload file. Please try again.");
+        setShowRetryButton(true);
         setIsProcessing(false);
         return;
       }
@@ -134,27 +197,68 @@ const Upload = () => {
         console.error("PDF processing error:", conversionError);
         updateStep("convert", "error");
         updateStep("extract-text", "error");
-        handleError(conversionError, "Failed to process resume. Please try a different file.");
+        setError(getErrorMessage(conversionError));
+        setShowRetryButton(true);
+        setIsProcessing(false);
         return;
       }
 
-      if (textResult?.text) {
+      if (textResult?.text && textResult.text.length > 50) {
         updateStep("extract-text", "complete", `Extracted ${textResult.text.length} characters`);
+        extractedText = textResult.text;
+        setResumeText(textResult.text);
       } else {
-        updateStep("extract-text", "error", "Could not extract text from PDF");
+        updateStep("extract-text", "error", "Could not extract enough text from PDF");
         if (textResult?.error) {
           console.warn("Text extraction warning:", textResult.error);
+        }
+        if (textResult?.text) {
+          extractedText = textResult.text;
+          setResumeText(textResult.text);
         }
       }
       
       if (!imageFile?.file) {
         updateStep("convert", "error");
-        const errorMsg = imageFile?.error || "Failed to process resume. Please try a different file.";
+        const errorMsg = imageFile?.error 
+          ? getErrorMessage(new Error(imageFile.error))
+          : "Failed to create preview image. The file may be corrupted or password-protected.";
         setError(errorMsg);
+        setShowRetryButton(true);
         setIsProcessing(false);
         return;
       }
       updateStep("convert", "complete");
+
+      if (!extractedText || extractedText.length < 50) {
+        updateStep("analyze", "error", "Not enough text found in document");
+        const fallbackFeedback = generateFallbackFeedback(
+          "The uploaded document doesn't appear to be a valid resume or contains insufficient text. Please upload a text-based PDF resume."
+        );
+        
+        uuid = generateUUID();
+        const data = {
+          id: uuid,
+          resumePath: uploadedFile?.path || "",
+          imagePath: imageFile?.file?.name || "",
+          companyName,
+          jobTitle,
+          jobDescription,
+          feedback: fallbackFeedback,
+          createdAt: new Date().toISOString(),
+        };
+
+        try {
+          await kv.set(`resume:${uuid}`, JSON.stringify(data));
+        } catch (kvError) {
+          console.error("KV set error:", kvError);
+        }
+
+        setTimeout(() => {
+          navigate(`/resume/${uuid}`);
+        }, 500);
+        return;
+      }
 
       updateStep("upload-image", "processing");
       let uploadedImage;
@@ -163,13 +267,16 @@ const Upload = () => {
       } catch (imageUploadError) {
         console.error("Image upload error:", imageUploadError);
         updateStep("upload-image", "error");
-        handleError(imageUploadError, "Failed to prepare preview. Please try again.");
+        setError(getErrorMessage(imageUploadError));
+        setShowRetryButton(true);
+        setIsProcessing(false);
         return;
       }
       
       if (!uploadedImage) {
         updateStep("upload-image", "error");
-        setError("Failed to prepare preview. Please try again.");
+        setError("Failed to prepare preview image. Please try again.");
+        setShowRetryButton(true);
         setIsProcessing(false);
         return;
       }
@@ -195,8 +302,6 @@ const Upload = () => {
 
       updateStep("analyze", "processing", rotateAnalysisPhase());
 
-      const resumeText = textResult.text || "[Could not extract text from resume. Please review manually.]";
-      
       const phaseInterval = setInterval(() => {
         updateStep("analyze", "processing", rotateAnalysisPhase());
       }, 3000);
@@ -204,7 +309,7 @@ const Upload = () => {
       let feedback;
       try {
         feedback = await ai.analyzeResume(
-          resumeText,
+          extractedText,
           prepareInstructions({
             jobTitle,
             jobDescription,
@@ -214,7 +319,9 @@ const Upload = () => {
         clearInterval(phaseInterval);
         console.error("AI Analysis Error:", aiError);
         updateStep("analyze", "error");
-        handleError(aiError, "AI analysis failed. Please try again.");
+        setError(getErrorMessage(aiError));
+        setShowRetryButton(true);
+        setIsProcessing(false);
         return;
       }
 
@@ -222,7 +329,8 @@ const Upload = () => {
 
       if (!feedback) {
         updateStep("analyze", "error");
-        setError("Analysis failed. Please try again.");
+        setError("AI analysis failed to respond. Please try again.");
+        setShowRetryButton(true);
         setIsProcessing(false);
         return;
       }
@@ -231,18 +339,23 @@ const Upload = () => {
       if (Array.isArray(feedbackContent)) {
         feedbackContent = feedbackContent[0]?.text || "";
       }
-      if (typeof feedbackContent !== "string") {
-        feedbackContent = JSON.stringify(feedbackContent);
+      if (typeof feedbackContent !== "string" || !feedbackContent) {
+        feedbackContent = JSON.stringify(feedbackContent || {});
       }
 
       let parsedFeedback;
       try {
         parsedFeedback = JSON.parse(feedbackContent);
-      } catch {
-        parsedFeedback = { 
+        if (!parsedFeedback.overallScore && !parsedFeedback.ATS) {
+          throw new Error("Invalid feedback structure");
+        }
+      } catch (parseError) {
+        console.warn("Could not parse AI response as JSON, using fallback:", parseError);
+        updateStep("analyze", "complete", "Analysis complete with warnings");
+        parsedFeedback = {
           overallScore: 50,
-          error: "Could not parse AI response",
-          rawResponse: feedbackContent,
+          warning: "AI response format was unexpected",
+          rawResponse: feedbackContent.substring(0, 500),
           ATS: { score: 50, tips: [] },
           toneAndStyle: { score: 50, tips: [] },
           content: { score: 50, tips: [] },
@@ -263,7 +376,10 @@ const Upload = () => {
         navigate(`/resume/${uuid}`);
       }, 500);
     } catch (err) {
-      handleError(err, "Something went wrong. Please try again.");
+      console.error("Analysis error:", err);
+      setError(getErrorMessage(err));
+      setShowRetryButton(true);
+      setIsProcessing(false);
     }
   };
 
@@ -272,10 +388,10 @@ const Upload = () => {
     const form = e.currentTarget;
     if (!form) return;
 
-    const formData = new FormData(form);
-    const companyName = formData.get("company-name") as string;
-    const jobTitle = formData.get("job-title") as string;
-    const jobDescription = formData.get("job-description") as string;
+    const formDataObj = new FormData(form);
+    const companyName = formDataObj.get("company-name") as string;
+    const jobTitle = formDataObj.get("job-title") as string;
+    const jobDescription = formDataObj.get("job-description") as string;
 
     if (!file) {
       setError("Please upload a resume first.");
@@ -284,8 +400,16 @@ const Upload = () => {
     handleAnalyse({ companyName, jobTitle, jobDescription, file });
   };
 
+  const handleRetry = () => {
+    setError(null);
+    setShowRetryButton(false);
+    setIsProcessing(false);
+    resetSteps();
+  };
+
   const currentAnalyzeStep = steps.find((s) => s.id === "analyze");
   const isAnalyzing = currentAnalyzeStep?.status === "processing";
+  const hasError = steps.some((s) => s.status === "error");
 
   return (
     <main className="min-h-screen bg-white">
@@ -311,7 +435,7 @@ const Upload = () => {
             </div>
 
             <h2 className="text-lg sm:text-xl font-semibold text-center text-slate-800 mb-6 sm:mb-8">
-              Analyzing Your Resume
+              {hasError ? "Processing Failed" : "Analyzing Your Resume"}
             </h2>
 
             <div className="space-y-1">
@@ -388,7 +512,32 @@ const Upload = () => {
 
             {error && (
               <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-red-600 text-sm text-center">{error}</p>
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-red-600 text-sm font-medium">Error</p>
+                    <p className="text-red-500 text-sm mt-1">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {showRetryButton && (
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleRetry}
+                  className="flex-1 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 cursor-pointer"
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={() => navigate("/")}
+                  className="flex-1 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-all cursor-pointer"
+                >
+                  Go Home
+                </button>
               </div>
             )}
           </div>
@@ -399,7 +548,7 @@ const Upload = () => {
           >
             <div className="space-y-2">
               <label htmlFor="company-name" className="block text-sm font-medium text-slate-700">
-                Target Company
+                Target Company <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -407,13 +556,15 @@ const Upload = () => {
                 placeholder="e.g., Google, Microsoft, Apple"
                 id="company-name"
                 required
+                value={formData.companyName}
+                onChange={handleFormChange}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="job-title" className="block text-sm font-medium text-slate-700">
-                Job Title
+                Job Title <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -421,33 +572,48 @@ const Upload = () => {
                 placeholder="e.g., Frontend Developer"
                 id="job-title"
                 required
+                value={formData.jobTitle}
+                onChange={handleFormChange}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="job-description" className="block text-sm font-medium text-slate-700">
-                Job Description
+                Job Description <span className="text-slate-400">(Optional)</span>
               </label>
               <textarea
                 rows={4}
                 name="job-description"
                 placeholder="Paste the job description here for more accurate feedback..."
                 id="job-description"
+                value={formData.jobDescription}
+                onChange={handleFormChange}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
               />
             </div>
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-slate-700">
-                Upload Resume
+                Upload Resume <span className="text-red-500">*</span>
               </label>
               <FileUploader onFileSelect={handleFileSelect} />
+              <p className="text-xs text-slate-400 mt-1">
+                Please upload a text-based PDF resume (not a scanned image)
+              </p>
             </div>
 
-            {error && (
-              <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-red-600 text-sm">{error}</p>
+            {error && !isProcessing && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-red-600 text-sm font-medium">Error</p>
+                    <p className="text-red-500 text-sm mt-1">{error}</p>
+                  </div>
+                </div>
               </div>
             )}
 
