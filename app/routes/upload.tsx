@@ -16,6 +16,12 @@ interface ProcessingStep {
   status: StepStatus;
 }
 
+interface FormData {
+  companyName: string;
+  jobTitle: string;
+  jobDescription: string;
+}
+
 const Upload = () => {
   const fs = usePuterStore((state) => state.fs);
   const ai = usePuterStore((state) => state.ai);
@@ -25,6 +31,8 @@ const Upload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showRetryButton, setShowRetryButton] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const savedFormData = useRef<FormData | null>(null);
 
   const [steps, setSteps] = useState<ProcessingStep[]>([
     { id: "upload", label: "Uploading resume", status: "pending" },
@@ -134,6 +142,9 @@ const Upload = () => {
       }
       if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
         return "Network error. Please check your connection and try again.";
+      }
+      if (message.includes("worker") || message.includes("Worker")) {
+        return "PDF processing failed. Please try a different file or use a text-based PDF.";
       }
       if (message.includes("undefined") || message.includes("not a function")) {
         return "File processing error. Please try a different PDF.";
@@ -368,6 +379,8 @@ const Upload = () => {
     const jobTitle = formDataObj.get("job-title") as string;
     const jobDescription = formDataObj.get("job-description") as string;
 
+    savedFormData.current = { companyName, jobTitle, jobDescription };
+
     if (!file) {
       setError("Please upload a resume first.");
       return;
@@ -518,6 +531,7 @@ const Upload = () => {
           </div>
         ) : (
           <form
+            ref={formRef}
             onSubmit={handleSubmit}
             className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 space-y-5 sm:space-y-6"
           >
@@ -531,6 +545,7 @@ const Upload = () => {
                 placeholder="e.g., Google, Microsoft, Apple"
                 id="company-name"
                 required
+                defaultValue={savedFormData.current?.companyName || ""}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
               />
             </div>
@@ -545,6 +560,7 @@ const Upload = () => {
                 placeholder="e.g., Frontend Developer"
                 id="job-title"
                 required
+                defaultValue={savedFormData.current?.jobTitle || ""}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
               />
             </div>
@@ -558,6 +574,7 @@ const Upload = () => {
                 name="job-description"
                 placeholder="Paste the job description here for more accurate feedback..."
                 id="job-description"
+                defaultValue={savedFormData.current?.jobDescription || ""}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
               />
             </div>

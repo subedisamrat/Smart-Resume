@@ -11,19 +11,56 @@ export interface PdfTextResult {
 
 let pdfjsLib: any = null;
 let loadPromise: Promise<any> | null = null;
+let workerInitFailed = false;
 
 async function loadPdfJs(): Promise<any> {
+  if (workerInitFailed) {
+    throw new Error("PDF worker initialization failed");
+  }
+  
   if (pdfjsLib) return pdfjsLib;
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
-    const lib = await import("pdfjs-dist/build/pdf.mjs");
-    lib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-    pdfjsLib = lib;
-    return lib;
+    try {
+      const lib = await import("pdfjs-dist/build/pdf.mjs");
+      
+      try {
+        lib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+      } catch (workerError) {
+        console.warn("Worker initialization warning:", workerError);
+      }
+      
+      pdfjsLib = lib;
+      return lib;
+    } catch (error) {
+      console.error("Failed to load PDF.js library:", error);
+      workerInitFailed = true;
+      throw error;
+    }
   })();
 
   return loadPromise;
+}
+
+async function extractTextFallback(file: File): Promise<PdfTextResult> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const text = content
+          .replace(/[^\x20-\x7E\n]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        resolve({ text: text.length > 50 ? text : "" });
+      } catch {
+        resolve({ text: "" });
+      }
+    };
+    reader.onerror = () => resolve({ text: "" });
+    reader.readAsText(file);
+  });
 }
 
 export async function convertPdfToImage(
@@ -87,7 +124,7 @@ export async function convertPdfToImage(
     return {
       imageUrl: "",
       file: null,
-      error: `Failed to convert PDF: ${err}`,
+      error: `Unable to process PDF. Please ensure it's a valid PDF document.`,
     };
   }
 }
@@ -113,12 +150,13 @@ export async function extractPdfText(file: File): Promise<PdfTextResult> {
       fullText += pageText + "\n\n";
     }
 
+    if (!fullText.trim()) {
+      return extractTextFallback(file);
+    }
+
     return { text: fullText.trim() };
   } catch (err) {
     console.error("PDF text extraction error:", err);
-    return {
-      text: "",
-      error: `Failed to extract text: ${err}`,
-    };
+    return extractTextFallback(file);
   }
 }
