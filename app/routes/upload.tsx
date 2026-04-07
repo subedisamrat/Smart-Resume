@@ -16,12 +16,6 @@ interface ProcessingStep {
   status: StepStatus;
 }
 
-interface FormData {
-  companyName: string;
-  jobTitle: string;
-  jobDescription: string;
-}
-
 const Upload = () => {
   const fs = usePuterStore((state) => state.fs);
   const ai = usePuterStore((state) => state.ai);
@@ -30,12 +24,6 @@ const Upload = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<FormData>({
-    companyName: "",
-    jobTitle: "",
-    jobDescription: "",
-  });
-  const [resumeText, setResumeText] = useState<string>("");
   const [showRetryButton, setShowRetryButton] = useState(false);
 
   const [steps, setSteps] = useState<ProcessingStep[]>([
@@ -79,21 +67,14 @@ const Upload = () => {
     setShowRetryButton(false);
   };
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setError(null);
-    setShowRetryButton(false);
-  };
-
   const rotateAnalysisPhase = () => {
     analysisPhaseRef.current = (analysisPhaseRef.current + 1) % analysisPhases.length;
     return analysisPhases[analysisPhaseRef.current];
   };
 
-  const generateFallbackFeedback = (reason: string) => ({
+  const generateFallbackFeedback = () => ({
     overallScore: 0,
-    error: reason,
+    error: "Unable to analyze document",
     rawResponse: "",
     ATS: { 
       score: 0, 
@@ -141,7 +122,6 @@ const Upload = () => {
     setIsProcessing(true);
     setError(null);
     setShowRetryButton(false);
-    setResumeText("");
     resetSteps();
 
     let uuid = "";
@@ -154,6 +134,9 @@ const Upload = () => {
       }
       if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
         return "Network error. Please check your connection and try again.";
+      }
+      if (message.includes("undefined") || message.includes("not a function")) {
+        return "File processing error. Please try a different PDF.";
       }
       return message || "Something went wrong. Please try again.";
     };
@@ -206,15 +189,10 @@ const Upload = () => {
       if (textResult?.text && textResult.text.length > 50) {
         updateStep("extract-text", "complete", `Extracted ${textResult.text.length} characters`);
         extractedText = textResult.text;
-        setResumeText(textResult.text);
       } else {
         updateStep("extract-text", "error", "Could not extract enough text from PDF");
-        if (textResult?.error) {
-          console.warn("Text extraction warning:", textResult.error);
-        }
         if (textResult?.text) {
           extractedText = textResult.text;
-          setResumeText(textResult.text);
         }
       }
       
@@ -232,9 +210,7 @@ const Upload = () => {
 
       if (!extractedText || extractedText.length < 50) {
         updateStep("analyze", "error", "Not enough text found in document");
-        const fallbackFeedback = generateFallbackFeedback(
-          "The uploaded document doesn't appear to be a valid resume or contains insufficient text. Please upload a text-based PDF resume."
-        );
+        const fallbackFeedback = generateFallbackFeedback();
         
         uuid = generateUUID();
         const data = {
@@ -349,8 +325,7 @@ const Upload = () => {
         if (!parsedFeedback.overallScore && !parsedFeedback.ATS) {
           throw new Error("Invalid feedback structure");
         }
-      } catch (parseError) {
-        console.warn("Could not parse AI response as JSON, using fallback:", parseError);
+      } catch {
         updateStep("analyze", "complete", "Analysis complete with warnings");
         parsedFeedback = {
           overallScore: 50,
@@ -556,8 +531,6 @@ const Upload = () => {
                 placeholder="e.g., Google, Microsoft, Apple"
                 id="company-name"
                 required
-                value={formData.companyName}
-                onChange={handleFormChange}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
               />
             </div>
@@ -572,8 +545,6 @@ const Upload = () => {
                 placeholder="e.g., Frontend Developer"
                 id="job-title"
                 required
-                value={formData.jobTitle}
-                onChange={handleFormChange}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
               />
             </div>
@@ -587,8 +558,6 @@ const Upload = () => {
                 name="job-description"
                 placeholder="Paste the job description here for more accurate feedback..."
                 id="job-description"
-                value={formData.jobDescription}
-                onChange={handleFormChange}
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
               />
             </div>
@@ -603,7 +572,7 @@ const Upload = () => {
               </p>
             </div>
 
-            {error && !isProcessing && (
+            {error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
                 <div className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

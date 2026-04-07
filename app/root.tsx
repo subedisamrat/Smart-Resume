@@ -12,27 +12,18 @@ import "./app.css";
 import { usePuterStore } from "./lib/puter";
 import { useEffect } from "react";
 
-declare global {
-  interface PromiseConstructor {
-    withResolvers<T>(): {
-      promise: Promise<T>;
-      resolve: (value: T | PromiseLike<T>) => void;
-      reject: (reason?: unknown) => void;
-    };
-  }
-}
-
-if (typeof Promise.withResolvers === "undefined") {
-  Promise.withResolvers = function<T>() {
-    let resolve!: (value: T | PromiseLike<T>) => void;
-    let reject!: (reason?: unknown) => void;
-    const promise = new Promise<T>((res, rej) => {
+const polyfillScript = `
+if (typeof Promise.withResolvers === 'undefined') {
+  Promise.withResolvers = function() {
+    var resolve, reject;
+    var promise = new Promise(function(res, rej) {
       resolve = res;
       reject = rej;
     });
-    return { promise, resolve, reject };
+    return { promise: promise, resolve: resolve, reject: reject };
   };
 }
+`;
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -61,6 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        <script dangerouslySetInnerHTML={{ __html: polyfillScript }} />
       </head>
       <body>
         <script src="https://js.puter.com/v2/"></script>
