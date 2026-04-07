@@ -30,42 +30,44 @@ const ResumeCard = memo(({ resume }: ResumeCardProps) => {
   return (
     <Link
       to={`/resume/${id}`}
-      className="group block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all duration-300"
+      className="group block bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all duration-300"
     >
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-4">
+      <div className="p-3 sm:p-4 md:p-5">
+        <div className="flex items-start justify-between mb-2 sm:mb-3 md:mb-4">
           <div className="flex-1 min-w-0">
             {companyName && (
-              <h3 className="font-semibold text-slate-900 truncate pr-3">
+              <h3 className="font-semibold text-slate-900 truncate pr-2 text-sm sm:text-base">
                 {companyName}
               </h3>
             )}
             {jobTitle && (
-              <p className="text-sm text-slate-500 truncate">{jobTitle}</p>
+              <p className="text-xs sm:text-sm text-slate-500 truncate">{jobTitle}</p>
             )}
             {!companyName && !jobTitle && (
-              <h3 className="font-semibold text-slate-900">Resume Analysis</h3>
+              <h3 className="font-semibold text-slate-900 text-sm sm:text-base">Resume Analysis</h3>
             )}
             {createdAt && (
-              <p className="text-xs text-slate-400 mt-1">{formatDate(createdAt)}</p>
+              <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1">{formatDate(createdAt)}</p>
             )}
           </div>
-          <ScoreCircle score={score} />
+          <div className="flex-shrink-0 ml-2">
+            <ScoreCircle score={score} />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${scoreStatus.bg} ${scoreStatus.color}`}>
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${scoreStatus.bg} ${scoreStatus.color}`}>
             {scoreStatus.label}
           </span>
           {feedback?.ATS?.score && (
-            <span className="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+            <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-slate-100 text-slate-600">
               ATS: {feedback.ATS.score}
             </span>
           )}
         </div>
       </div>
 
-      <div className="h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <div className="h-0.5 sm:h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
     </Link>
   );
 });

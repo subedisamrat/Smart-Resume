@@ -64,7 +64,7 @@ const AnimatedCard = ({ children, delay = 0 }: { children: React.ReactNode; dela
 };
 
 const EmptyState = ({ isLoggedIn }: { isLoggedIn: boolean }) => (
-  <section className="max-w-4xl mx-auto px-4 py-12 sm:py-20">
+  <section className="max-w-4xl mx-auto px-3 sm:px-4 py-10 sm:py-16">
     <motion.div 
       className="text-center"
       initial={{ opacity: 0, scale: 0.9 }}
@@ -72,19 +72,19 @@ const EmptyState = ({ isLoggedIn }: { isLoggedIn: boolean }) => (
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <motion.div 
-        className="relative mx-auto mb-6 sm:mb-8"
-        animate={{ y: [0, -10, 0] }}
+        className="relative mx-auto mb-5 sm:mb-8"
+        animate={{ y: [0, -8, 0] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
-        <div className="w-28 h-28 sm:w-36 sm:h-36 mx-auto bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
-          <svg className="w-14 h-14 sm:w-18 sm:h-18 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-24 h-24 sm:w-32 sm:h-32 mx-auto bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+          <svg className="w-12 h-12 sm:w-16 sm:h-16 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
       </motion.div>
       
       <motion.h2 
-        className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3 sm:mb-4"
+        className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-2 sm:mb-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.5 }}
@@ -93,7 +93,7 @@ const EmptyState = ({ isLoggedIn }: { isLoggedIn: boolean }) => (
       </motion.h2>
       
       <motion.p 
-        className="text-slate-500 mb-8 sm:mb-10 max-w-lg mx-auto text-sm sm:text-base px-4"
+        className="text-slate-500 mb-6 sm:mb-8 md:mb-10 max-w-md sm:max-w-lg mx-auto text-xs sm:text-sm md:text-base px-2"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.5 }}
@@ -111,31 +111,31 @@ const EmptyState = ({ isLoggedIn }: { isLoggedIn: boolean }) => (
       >
         <Link
           to="/upload"
-          className="inline-flex items-center justify-center gap-2 px-8 sm:px-10 py-4 sm:py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-2xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl sm:rounded-2xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 cursor-pointer text-sm sm:text-base"
         >
-          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          <span className="text-base sm:text-lg">Analyze Your Resume</span>
+          Analyze Your Resume
         </Link>
       </motion.div>
       
       {isLoggedIn && (
         <motion.div 
-          className="mt-8 sm:mt-12 p-4 sm:p-6 bg-white rounded-2xl max-w-md mx-auto shadow-sm border border-slate-100"
+          className="mt-6 sm:mt-10 p-3 sm:p-5 bg-white rounded-xl sm:rounded-2xl max-w-sm sm:max-w-md mx-auto shadow-sm border border-slate-100"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
         >
-          <div className="flex items-start gap-3 sm:gap-4 text-left">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-50 rounded-xl flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-start gap-2.5 sm:gap-4 text-left">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 bg-indigo-50 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <p className="font-medium text-slate-900 text-sm sm:text-base mb-1">Pro Tip</p>
-              <p className="text-slate-500 text-xs sm:text-sm">Upload a job description along with your resume for more personalized feedback.</p>
+              <p className="font-medium text-slate-900 text-xs sm:text-sm mb-0.5 sm:mb-1">Pro Tip</p>
+              <p className="text-slate-500 text-xs">Upload a job description along with your resume for more personalized feedback.</p>
             </div>
           </div>
         </motion.div>
@@ -490,20 +490,20 @@ export default function Home() {
       ) : showEmptyDashboard ? (
         <EmptyState isLoggedIn={true} />
       ) : (
-        <section className="max-w-6xl mx-auto px-4 py-10">
+        <section className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-10">
           <motion.div 
-            className="mb-8"
+            className="mb-5 sm:mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-1">Your Dashboard</h1>
-            <p className="text-slate-500">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mb-0.5 sm:mb-1">Your Dashboard</h1>
+            <p className="text-xs sm:text-sm text-slate-500">
               {resumes.length} resume{resumes.length !== 1 ? "s" : ""} analyzed
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             {resumes.map((resume, index) => (
               <motion.div
                 key={resume.id}

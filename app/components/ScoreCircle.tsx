@@ -17,7 +17,7 @@ const ScoreCircle = memo(({ score = 0 }: { score: number }) => {
   const colors = getColor();
 
   return (
-    <div className="relative w-[80px] h-[80px]">
+    <div className="relative w-14 h-14 sm:w-20 sm:h-20">
       <svg height="100%" width="100%" viewBox="0 0 80 80" className="transform -rotate-90">
         <defs>
           <linearGradient id={`scoreGrad-${score}`} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -47,8 +47,8 @@ const ScoreCircle = memo(({ score = 0 }: { score: number }) => {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="font-bold text-lg text-slate-900">{score}</span>
-        <span className="text-[10px] text-slate-400">/100</span>
+        <span className="font-bold text-sm sm:text-lg text-slate-900">{score}</span>
+        <span className="text-[8px] sm:text-[10px] text-slate-400">/100</span>
       </div>
     </div>
   );
