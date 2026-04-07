@@ -87,9 +87,29 @@ const Upload = () => {
 
     let uuid = "";
 
+    const handleError = (err: unknown, defaultMessage: string) => {
+      console.error("Analysis error:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("withResolvers")) {
+        setError("Unable to process this PDF file. Please try a different file or ensure it's a valid PDF document.");
+      } else {
+        setError(defaultMessage);
+      }
+      setIsProcessing(false);
+    };
+
     try {
       updateStep("upload", "processing");
-      const uploadedFile = await fs.upload([resumeFile]);
+      
+      let uploadedFile;
+      try {
+        uploadedFile = await fs.upload([resumeFile]);
+      } catch (uploadError) {
+        console.error("Upload error:", uploadError);
+        updateStep("upload", "error");
+        handleError(uploadError, "Failed to upload resume. Please try again.");
+        return;
+      }
       
       if (!uploadedFile) {
         updateStep("upload", "error");
@@ -114,8 +134,7 @@ const Upload = () => {
         console.error("PDF processing error:", conversionError);
         updateStep("convert", "error");
         updateStep("extract-text", "error");
-        setError("Failed to process resume. Please try a different file.");
-        setIsProcessing(false);
+        handleError(conversionError, "Failed to process resume. Please try a different file.");
         return;
       }
 
@@ -138,7 +157,15 @@ const Upload = () => {
       updateStep("convert", "complete");
 
       updateStep("upload-image", "processing");
-      const uploadedImage = await fs.upload([imageFile.file]);
+      let uploadedImage;
+      try {
+        uploadedImage = await fs.upload([imageFile.file]);
+      } catch (imageUploadError) {
+        console.error("Image upload error:", imageUploadError);
+        updateStep("upload-image", "error");
+        handleError(imageUploadError, "Failed to prepare preview. Please try again.");
+        return;
+      }
       
       if (!uploadedImage) {
         updateStep("upload-image", "error");
@@ -160,7 +187,11 @@ const Upload = () => {
         createdAt: new Date().toISOString(),
       };
 
-      await kv.set(`resume:${uuid}`, JSON.stringify(data));
+      try {
+        await kv.set(`resume:${uuid}`, JSON.stringify(data));
+      } catch (kvError) {
+        console.error("KV set error:", kvError);
+      }
 
       updateStep("analyze", "processing", rotateAnalysisPhase());
 
@@ -183,8 +214,7 @@ const Upload = () => {
         clearInterval(phaseInterval);
         console.error("AI Analysis Error:", aiError);
         updateStep("analyze", "error");
-        setError("AI analysis failed. Please try again.");
-        setIsProcessing(false);
+        handleError(aiError, "AI analysis failed. Please try again.");
         return;
       }
 
@@ -222,16 +252,18 @@ const Upload = () => {
       }
 
       data.feedback = parsedFeedback;
-      await kv.set(`resume:${uuid}`, JSON.stringify(data));
+      try {
+        await kv.set(`resume:${uuid}`, JSON.stringify(data));
+      } catch (kvError) {
+        console.error("KV update error:", kvError);
+      }
       updateStep("analyze", "complete", "Analysis complete!");
 
       setTimeout(() => {
         navigate(`/resume/${uuid}`);
       }, 500);
     } catch (err) {
-      console.error("Analysis error:", err);
-      setError("Something went wrong. Please try again.");
-      setIsProcessing(false);
+      handleError(err, "Something went wrong. Please try again.");
     }
   };
 
@@ -256,29 +288,29 @@ const Upload = () => {
   const isAnalyzing = currentAnalyzeStep?.status === "processing";
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+    <main className="min-h-screen bg-white">
       <Navbar />
 
-      <section className="max-w-3xl mx-auto px-4 py-12">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+      <section className="max-w-3xl mx-auto px-4 py-8 sm:py-12">
+        <div className="text-center mb-8 sm:mb-10">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-indigo-600 mb-4">
             Get Smart Feedback
           </h1>
-          <p className="text-lg text-slate-600 max-w-xl mx-auto">
+          <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto">
             Upload your resume and job description to get AI-powered insights and improve your chances of landing your dream job.
           </p>
         </div>
 
         {isProcessing ? (
-          <div className="bg-white rounded-2xl shadow-xl shadow-indigo-100/50 p-8 max-w-lg mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-lg mx-auto">
             <div className="flex flex-col items-center mb-6">
               <div className="relative">
-                <div className="w-16 h-16 border-4 border-indigo-100 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-16 h-16 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                <div className="w-14 h-14 sm:w-16 sm:h-16 border-4 border-indigo-100 rounded-full"></div>
+                <div className="absolute top-0 left-0 w-14 h-14 sm:w-16 sm:h-16 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
               </div>
             </div>
 
-            <h2 className="text-xl font-semibold text-center text-slate-800 mb-8">
+            <h2 className="text-lg sm:text-xl font-semibold text-center text-slate-800 mb-6 sm:mb-8">
               Analyzing Your Resume
             </h2>
 
@@ -363,7 +395,7 @@ const Upload = () => {
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="bg-white rounded-2xl shadow-xl shadow-indigo-100/50 p-8 space-y-6"
+            className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 space-y-5 sm:space-y-6"
           >
             <div className="space-y-2">
               <label htmlFor="company-name" className="block text-sm font-medium text-slate-700">
@@ -375,7 +407,7 @@ const Upload = () => {
                 placeholder="e.g., Google, Microsoft, Apple"
                 id="company-name"
                 required
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
               />
             </div>
 
@@ -389,7 +421,7 @@ const Upload = () => {
                 placeholder="e.g., Frontend Developer"
                 id="job-title"
                 required
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
               />
             </div>
 
@@ -402,7 +434,7 @@ const Upload = () => {
                 name="job-description"
                 placeholder="Paste the job description here for more accurate feedback..."
                 id="job-description"
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
               />
             </div>
 
@@ -414,7 +446,7 @@ const Upload = () => {
             </div>
 
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+              <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl">
                 <p className="text-red-600 text-sm">{error}</p>
               </div>
             )}
@@ -422,7 +454,7 @@ const Upload = () => {
             <button
               type="submit"
               disabled={!file}
-              className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-200 cursor-pointer"
+              className="w-full py-3 sm:py-4 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-200 cursor-pointer text-sm sm:text-base"
             >
               {file ? "Analyze Resume" : "Upload a Resume to Continue"}
             </button>
