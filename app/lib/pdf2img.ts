@@ -57,6 +57,10 @@ export async function convertPdfToImage(
   try {
     const lib = await loadPdfJs();
 
+    const isMobile = typeof window !== "undefined" && 
+      (window.innerWidth <= 768 || navigator.maxTouchPoints > 0);
+    const finalScale = isMobile ? 1.0 : scale;
+
     let arrayBuffer: ArrayBuffer;
     try {
       arrayBuffer = await readFileArrayBuffer(file);
@@ -68,11 +72,24 @@ export async function convertPdfToImage(
       };
     }
 
-    const loadingTask = lib.getDocument({ data: new Uint8Array(arrayBuffer) });
-    const pdf = await loadingTask.promise;
+    let pdf;
+    try {
+      const loadingTask = lib.getDocument({ data: new Uint8Array(arrayBuffer) });
+      pdf = await loadingTask.promise;
+    } catch (pdfError) {
+      const message = pdfError instanceof Error ? pdfError.message : String(pdfError);
+      if (message.includes("Invalid PDF") || message.includes("PDF")) {
+        return {
+          imageUrl: "",
+          file: null,
+          error: "The file appears to be corrupted or is not a valid PDF.",
+        };
+      }
+      throw pdfError;
+    }
+    
     const page = await pdf.getPage(1);
-
-    const viewport = page.getViewport({ scale });
+    const viewport = page.getViewport({ scale: finalScale });
     const canvas = window.document.createElement("canvas");
     const context = canvas.getContext("2d");
 
@@ -81,7 +98,7 @@ export async function convertPdfToImage(
 
     if (context) {
       context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = "high";
+      context.imageSmoothingQuality = "low";
     }
 
     const renderTask = page.render({

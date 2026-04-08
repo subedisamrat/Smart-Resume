@@ -182,10 +182,10 @@ const Details = memo(({ feedback }: DetailsProps) => {
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-      <div className="p-6 border-b border-slate-100">
-        <h2 className="text-xl font-bold text-slate-900">Detailed Feedback</h2>
-        <p className="text-sm text-slate-500 mt-1">
+    <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="p-4 sm:p-6 border-b border-slate-100">
+        <h2 className="text-lg sm:text-xl font-bold text-slate-900">Detailed Feedback</h2>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
           Click on each category to see specific recommendations
         </p>
       </div>
@@ -194,13 +194,13 @@ const Details = memo(({ feedback }: DetailsProps) => {
         {categories.map((category) => (
           <AccordionItem key={category.id} id={category.id}>
             <AccordionHeader itemId={category.id}>
-              <CategoryHeader
-                title={category.title}
-                categoryScore={category.data?.score || 0}
-              />
+              <div className="flex items-center justify-between w-full pr-2">
+                <span className="text-sm sm:text-lg font-semibold text-slate-900">{category.title}</span>
+                <ScoreBadge score={category.data?.score || 0} />
+              </div>
             </AccordionHeader>
             <AccordionContent itemId={category.id}>
-              <div className="pt-4">
+              <div className="pt-2 sm:pt-4">
                 <CategoryContent tips={category.data?.tips || []} />
               </div>
             </AccordionContent>

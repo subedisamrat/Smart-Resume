@@ -403,12 +403,12 @@ const Upload = () => {
     <main className="min-h-screen bg-white">
       <Navbar />
 
-      <section className="max-w-3xl mx-auto px-4 py-8 sm:py-12">
-        <div className="text-center mb-8 sm:mb-10">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-indigo-600 mb-4">
+      <section className="max-w-3xl mx-auto px-3 sm:px-4 py-6 sm:py-10">
+        <div className="text-center mb-6 sm:mb-8 md:mb-10">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-indigo-600 mb-3 sm:mb-4">
             Get Smart Feedback
           </h1>
-          <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto">
+          <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto px-2">
             Upload your resume and job description to get AI-powered insights and improve your chances of landing your dream job.
           </p>
         </div>
