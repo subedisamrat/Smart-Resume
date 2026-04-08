@@ -37,7 +37,9 @@ const Auth = () => {
     setAuthState("signing_in");
     try {
       await auth.signIn();
-      navigateToNext();
+      setTimeout(() => {
+        navigateToNext();
+      }, 500);
     } catch (error) {
       console.error("Sign in error:", error);
       setAuthState("ready");

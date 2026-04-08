@@ -22,6 +22,12 @@ interface FormData {
   jobDescription: string;
 }
 
+interface FormErrors {
+  companyName?: string;
+  jobTitle?: string;
+  file?: string;
+}
+
 const Upload = () => {
   const fs = usePuterStore((state) => state.fs);
   const ai = usePuterStore((state) => state.ai);
@@ -31,6 +37,7 @@ const Upload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showRetryButton, setShowRetryButton] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const formRef = useRef<HTMLFormElement>(null);
   const savedFormData = useRef<FormData | null>(null);
 
@@ -73,6 +80,29 @@ const Upload = () => {
     setFile(selectedFile);
     setError(null);
     setShowRetryButton(false);
+    setFormErrors((prev) => ({ ...prev, file: undefined }));
+  };
+
+  const validateForm = (companyName: string, jobTitle: string, file: File | null): FormErrors => {
+    const errors: FormErrors = {};
+    
+    if (!companyName.trim()) {
+      errors.companyName = "Company name is required";
+    } else if (/[\d]/.test(companyName)) {
+      errors.companyName = "Company name cannot contain numbers";
+    }
+    
+    if (!jobTitle.trim()) {
+      errors.jobTitle = "Job title is required";
+    } else if (/[\d]/.test(jobTitle)) {
+      errors.jobTitle = "Job title cannot contain numbers";
+    }
+    
+    if (!file) {
+      errors.file = "Please upload a resume";
+    }
+    
+    return errors;
   };
 
   const rotateAnalysisPhase = () => {
@@ -149,8 +179,15 @@ const Upload = () => {
       if (message.includes("undefined") || message.includes("not a function")) {
         return "File processing error. Please try a different PDF.";
       }
+      if (message.includes("timeout") || message.includes("Timeout")) {
+        return "Processing timed out. Please try a smaller PDF file.";
+      }
       return message || "Something went wrong. Please try again.";
     };
+
+    const timeout = (ms: number) => new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Processing timeout")), ms)
+    );
 
     try {
       updateStep("upload", "processing");
@@ -183,10 +220,14 @@ const Upload = () => {
       let textResult;
       
       try {
-        [imageFile, textResult] = await Promise.all([
+        const pdfPromise = Promise.all([
           convertPdfToImage(resumeFile, 1.5),
           extractPdfText(resumeFile),
         ]);
+        const timeoutPromise = timeout(30000);
+        
+        const results = await Promise.race([pdfPromise, timeoutPromise]);
+        [imageFile, textResult] = results as [any, any];
       } catch (conversionError) {
         console.error("PDF processing error:", conversionError);
         updateStep("convert", "error");
@@ -200,6 +241,8 @@ const Upload = () => {
       if (textResult?.text && textResult.text.length > 50) {
         updateStep("extract-text", "complete", `Extracted ${textResult.text.length} characters`);
         extractedText = textResult.text;
+      } else if (textResult?.error) {
+        updateStep("extract-text", "error", textResult.error);
       } else {
         updateStep("extract-text", "error", "Could not extract enough text from PDF");
         if (textResult?.text) {
@@ -295,13 +338,16 @@ const Upload = () => {
 
       let feedback;
       try {
-        feedback = await ai.analyzeResume(
+        const aiPromise = ai.analyzeResume(
           extractedText,
           prepareInstructions({
             jobTitle,
             jobDescription,
           }),
         );
+        const timeoutPromise = timeout(60000);
+        
+        feedback = await Promise.race([aiPromise, timeoutPromise]) as any;
       } catch (aiError) {
         clearInterval(phaseInterval);
         console.error("AI Analysis Error:", aiError);
@@ -381,8 +427,15 @@ const Upload = () => {
 
     savedFormData.current = { companyName, jobTitle, jobDescription };
 
+    const errors = validateForm(companyName, jobTitle, file);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setFormErrors({});
     if (!file) {
-      setError("Please upload a resume first.");
+      setFormErrors({ file: "Please upload a resume first." });
       return;
     }
     handleAnalyse({ companyName, jobTitle, jobDescription, file });
@@ -546,8 +599,14 @@ const Upload = () => {
                 id="company-name"
                 required
                 defaultValue={savedFormData.current?.companyName || ""}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                onChange={() => setFormErrors((prev) => ({ ...prev, companyName: undefined }))}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${
+                  formErrors.companyName ? "border-red-300 bg-red-50" : "border-slate-200"
+                }`}
               />
+              {formErrors.companyName && (
+                <p className="text-xs text-red-500 mt-1">{formErrors.companyName}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -561,8 +620,14 @@ const Upload = () => {
                 id="job-title"
                 required
                 defaultValue={savedFormData.current?.jobTitle || ""}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                onChange={() => setFormErrors((prev) => ({ ...prev, jobTitle: undefined }))}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all ${
+                  formErrors.jobTitle ? "border-red-300 bg-red-50" : "border-slate-200"
+                }`}
               />
+              {formErrors.jobTitle && (
+                <p className="text-xs text-red-500 mt-1">{formErrors.jobTitle}</p>
+              )}
             </div>
 
             <div className="space-y-2">
